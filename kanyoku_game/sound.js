@@ -15,6 +15,10 @@ class SoundManager {
         this.initialized = false;
         this.bgmWasPaused = false;
 
+        // 単一のAudioインスタンスを生成して使い回す（自動再生ポリシー対策）
+        this.bgmAudio = new Audio();
+        this.bgmAudio.volume = 0.35;
+
         // バックグラウンド移行時にBGMを停止/復帰
         document.addEventListener('visibilitychange', () => {
             this._handleVisibilityChange();
@@ -24,8 +28,8 @@ class SoundManager {
     _handleVisibilityChange() {
         if (document.hidden) {
             // バックグラウンドへ — BGM一時停止
-            if (this.currentBGM && !this.currentBGM.paused) {
-                this.currentBGM.pause();
+            if (this.bgmAudio && !this.bgmAudio.paused) {
+                this.bgmAudio.pause();
                 this.bgmWasPaused = true;
             }
             if (this.ctx && this.ctx.state === 'running') {
@@ -33,8 +37,8 @@ class SoundManager {
             }
         } else {
             // フォアグラウンドへ — BGM再開
-            if (this.bgmWasPaused && this.currentBGM) {
-                this.currentBGM.play().catch(e => console.warn('BGM再開失敗:', e));
+            if (this.bgmWasPaused && this.bgmAudio) {
+                this.bgmAudio.play().catch(e => console.warn('BGM再開失敗:', e));
                 this.bgmWasPaused = false;
             }
             if (this.ctx && this.ctx.state === 'suspended') {
@@ -220,10 +224,9 @@ class SoundManager {
 
     _playBGMFile(src, loop = true) {
         this.stopBGM();
-        this.currentBGM = new Audio(src);
-        this.currentBGM.loop = loop;
-        this.currentBGM.volume = 0.35;
-        this.currentBGM.play().catch(e => console.warn('BGM再生失敗:', e));
+        this.bgmAudio.src = src;
+        this.bgmAudio.loop = loop;
+        this.bgmAudio.play().catch(e => console.warn('BGM再生失敗:', e));
         this.bgmPlaying = true;
     }
 
@@ -260,10 +263,11 @@ class SoundManager {
     // --- BGM停止 ---
     stopBGM() {
         this.bgmPlaying = false;
-        if (this.currentBGM) {
-            this.currentBGM.pause();
-            this.currentBGM.currentTime = 0;
-            this.currentBGM = null;
+        if (this.bgmAudio && !this.bgmAudio.paused) {
+            this.bgmAudio.pause();
+        }
+        if (this.bgmAudio) {
+            this.bgmAudio.currentTime = 0;
         }
         if (this.bgmTimer) {
             clearTimeout(this.bgmTimer);
