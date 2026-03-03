@@ -247,6 +247,11 @@ class SoundManager {
         this._playBGMFile('audio/battle_last.mp3', true);
     }
 
+    // --- 捕獲画面BGM (victory.mp3をループ) ---
+    playCaptureBGM() {
+        this._playBGMFile('audio/victory.mp3', true);
+    }
+
     // --- タイトルBGM (opening.mp3) ---
     playTitleBGM() {
         this._playBGMFile('audio/opening.mp3', true);

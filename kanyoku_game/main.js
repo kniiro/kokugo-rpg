@@ -75,31 +75,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadQuestions();
   setupEventListeners();
 
-  // 初回タッチでAudioContext起動
-  const initAudio = () => {
-    soundManager.init();
-    soundManager.resume();
-    document.removeEventListener('click', initAudio);
-    document.removeEventListener('touchstart', initAudio);
-  };
-  document.addEventListener('click', initAudio);
-  document.addEventListener('touchstart', initAudio);
-
   // セーブデータがあれば途中から再開
   const hasProgress = loadProgress();
   if (hasProgress) {
     showScreen('screen-map');
     renderMap();
-    // 音声は初回タッチ後に再生されるため、ここではタッチ待ち
-    const startBGMOnce = () => {
+
+    const startMapBGMOnce = () => {
       soundManager.init();
       soundManager.resume();
-      soundManager.playMapBGM();
-      document.removeEventListener('click', startBGMOnce);
-      document.removeEventListener('touchstart', startBGMOnce);
+      if (document.getElementById('screen-map').classList.contains('active')) {
+        soundManager.playMapBGM();
+      }
+      document.removeEventListener('click', startMapBGMOnce);
+      document.removeEventListener('touchstart', startMapBGMOnce);
     };
-    document.addEventListener('click', startBGMOnce);
-    document.addEventListener('touchstart', startBGMOnce);
+    document.addEventListener('click', startMapBGMOnce);
+    document.addEventListener('touchstart', startMapBGMOnce);
+  } else {
+    showScreen('screen-title');
+
+    // 初回タッチでタイトルBGM再生
+    const startTitleBGMOnce = () => {
+      soundManager.init();
+      soundManager.resume();
+      if (document.getElementById('screen-title').classList.contains('active')) {
+        soundManager.playTitleBGM();
+      }
+      document.removeEventListener('click', startTitleBGMOnce);
+      document.removeEventListener('touchstart', startTitleBGMOnce);
+    };
+    document.addEventListener('click', startTitleBGMOnce);
+    document.addEventListener('touchstart', startTitleBGMOnce);
   }
 });
 
@@ -573,6 +580,9 @@ function showCaptureModal(enemy) {
   document.getElementById('capture-enemy-sprite').classList.remove('hidden');
 
   modal.classList.remove('hidden');
+
+  // BGMを捕獲用 (victory.mp3) に切り替え
+  soundManager.playCaptureBGM();
 
   // イベント登録
   ball.addEventListener('touchstart', handleSwipeStart, { passive: false });
