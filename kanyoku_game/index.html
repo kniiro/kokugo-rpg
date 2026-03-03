@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>国語でポケモンをゲット！バトルRPG</title>
+  <meta name="description" content="小学5年生向け国語学習RPG。慣用句・ことわざ・四字熟語をバトルで楽しく学ぼう！">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- PWA/iOS フルスクリーン（スタンドアロン）対応 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="国語RPG">
+  <link rel="apple-touch-icon" href="images/enemy9.png">
+</head>
+
+<body>
+
+  <!-- ===== タイトル画面 ===== -->
+  <div id="screen-title" class="screen active">
+    <div class="gb-frame">
+      <div class="gb-screen">
+        <div class="title-content">
+          <div class="title-logo">
+            <h1>国語でポケモンを<br>ゲット！<br>バトルRPG</h1>
+          </div>
+          <div class="title-pokemon-art">
+            <div class="pixel-pokeball"></div>
+          </div>
+          <button id="btn-start" class="gb-btn pulse">▶ はじめる</button>
+          <p class="title-hint">タップしてスタート！</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== マップ画面 ===== -->
+  <div id="screen-map" class="screen">
+    <div class="gb-frame">
+      <div class="gb-screen">
+        <div class="map-header">
+          <div class="player-status">
+            <span class="status-label">なかま:</span>
+            <span id="map-allies" class="ally-icons"></span>
+          </div>
+        </div>
+        <div class="map-content">
+          <h2 class="map-title">冒険マップ</h2>
+          <div id="map-board" class="map-board">
+            <!-- JS で生成 -->
+          </div>
+        </div>
+        <div class="map-footer">
+          <button id="btn-next-battle" class="gb-btn">次のマスへ進む！</button>
+          <button id="btn-reset-progress" class="gb-btn"
+            style="margin-top:8px; background:linear-gradient(180deg,#888,#555); font-size:0.65rem; padding:6px 12px;">🔄
+            最初からやりなおす</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== バトル画面 ===== -->
+  <div id="screen-battle" class="screen">
+    <div class="gb-frame">
+      <div class="gb-screen battle-screen">
+        <!-- 敵エリア -->
+        <div class="battle-enemy-area">
+          <div class="enemy-info">
+            <span id="enemy-name" class="enemy-name"></span>
+            <div class="hp-bar-wrap">
+              <div id="enemy-hp-bar" class="hp-bar enemy-bar"></div>
+            </div>
+            <span id="enemy-hp-text" class="hp-text"></span>
+          </div>
+          <div id="enemy-sprite" class="enemy-sprite">
+            <img id="enemy-img" src="" alt="敵ポケモン">
+          </div>
+        </div>
+
+        <!-- プレイヤーエリア -->
+        <div class="battle-player-area">
+          <div class="player-info">
+            <span class="player-name">プレイヤー</span>
+            <div class="hp-bar-wrap">
+              <div id="player-hp-bar" class="hp-bar player-bar"></div>
+            </div>
+            <span id="player-hp-text" class="hp-text"></span>
+          </div>
+          <div class="player-allies-display">
+            <span id="battle-allies" class="ally-icons"></span>
+          </div>
+        </div>
+
+        <!-- メッセージ & 問題エリア -->
+        <div class="battle-msg-area">
+          <div id="battle-message" class="battle-message"></div>
+        </div>
+        <div id="question-area" class="question-area hidden">
+          <p id="question-text" class="question-text"></p>
+          <p id="question-category" class="question-category"></p>
+          <div id="choices" class="choices">
+            <!-- JS で4択生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== リザルト画面（敗北） ===== -->
+  <div id="screen-result" class="screen">
+    <div class="gb-frame">
+      <div class="gb-screen">
+        <div class="result-content">
+          <h2 class="result-title lose">ゲームオーバー…</h2>
+          <p id="result-message" class="result-message"></p>
+          <div class="result-stats">
+            <p>到達マス: <span id="result-stage">1</span> / 10</p>
+            <p>倒したポケモン: <span id="result-defeated">0</span> 体</p>
+          </div>
+          <button id="btn-retry" class="gb-btn">もういちどチャレンジ！</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== クリア画面 ===== -->
+  <div id="screen-clear" class="screen">
+    <div class="gb-frame">
+      <div class="gb-screen">
+        <div class="clear-content">
+          <h2 class="clear-title">🎉 クリアおめでとう！ 🎉</h2>
+          <div class="clear-trophy">🏆</div>
+          <p class="clear-message">すべてのポケモンを倒して<br>国語マスターになった！</p>
+          <div id="clear-allies" class="clear-allies"></div>
+          <button id="btn-restart" class="gb-btn">はじめからプレイ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== モンスターボール捕獲モーダル ===== -->
+  <div id="modal-capture" class="modal hidden">
+    <div class="capture-fullscreen">
+      <p class="capture-title-text">🎯 ゲットチャンス！</p>
+      <p id="capture-message" class="capture-msg"></p>
+
+      <!-- ターゲットエリア（敵＋リング） -->
+      <div class="capture-target-area">
+        <div id="capture-target-ring" class="target-ring"></div>
+        <div id="capture-enemy-sprite" class="capture-enemy-center"></div>
+      </div>
+
+      <!-- ボール投げエリア -->
+      <div id="capture-swipe-area" class="capture-swipe-area">
+        <div id="capture-ball" class="swipe-ball">
+          <div class="pokeball-mini"></div>
+        </div>
+      </div>
+
+      <p id="capture-hint" class="capture-hint-text">↑ ボールを上にスワイプ！</p>
+
+      <button id="btn-skip-capture" class="capture-btn-skip">にがす ▶</button>
+      <div id="capture-result" class="capture-result hidden"></div>
+    </div>
+  </div>
+
+  <!-- ===== 身代わり演出モーダル ===== -->
+  <div id="modal-substitute" class="modal hidden">
+    <div class="modal-content">
+      <p class="modal-title">⚡ ピンチ！</p>
+      <p id="sub-message" class="modal-message"></p>
+      <div id="sub-sprite" class="sub-sprite"></div>
+      <button id="btn-sub-continue" class="gb-btn">バトルを続ける</button>
+    </div>
+  </div>
+
+  <script src="questions_data.js"></script>
+  <script src="sound.js"></script>
+  <script src="main.js"></script>
+</body>
+
+</html>

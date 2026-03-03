@@ -1,0 +1,1311 @@
+/* ============================================
+   国語克服バトルRPG — モダンホワイトデザイン
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=DotGothic16&display=swap');
+
+/* --- Reset & Base --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --white: #ffffff;
+  --bg: #f5f6fa;
+  --text: #2d3436;
+  --text-light: #636e72;
+  --text-muted: #b2bec3;
+
+  --primary: #6c5ce7;
+  --primary-light: #a29bfe;
+  --primary-dark: #5f3dc4;
+
+  --accent: #fd79a8;
+  --accent-light: #fab1d0;
+
+  --success: #00b894;
+  --success-light: #55efc4;
+  --danger: #e17055;
+  --danger-light: #fab1a0;
+  --warning: #fdcb6e;
+
+  --hp-green: #00b894;
+  --hp-yellow: #fdcb6e;
+  --hp-red: #e17055;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.12);
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+
+  --font-main: 'M PLUS Rounded 1c', 'Hiragino Sans', sans-serif;
+  --font-pixel: 'DotGothic16', monospace;
+}
+
+html {
+  font-size: 15px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-main);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* --- Screen Management --- */
+.screen {
+  display: none;
+  width: 100%;
+  max-width: 430px;
+  height: 100dvh;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.screen.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: screenIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes screenIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* --- Frame --- */
+.gb-frame {
+  width: 100%;
+  height: 100%;
+  background: var(--white);
+  padding: 0;
+}
+
+.gb-screen {
+  width: 100%;
+  height: 100%;
+  background: var(--white);
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Scrollbar --- */
+.gb-screen::-webkit-scrollbar {
+  width: 4px;
+}
+
+.gb-screen::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gb-screen::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 4px;
+}
+
+/* --- Buttons --- */
+.gb-btn {
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.35);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.5px;
+}
+
+.gb-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent);
+  border-radius: inherit;
+}
+
+.gb-btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.25);
+}
+
+.gb-btn.pulse {
+  animation: btnGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes btnGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 4px 16px rgba(108, 92, 231, 0.35);
+  }
+
+  50% {
+    box-shadow: 0 4px 28px rgba(108, 92, 231, 0.55), 0 0 0 8px rgba(108, 92, 231, 0.1);
+  }
+}
+
+/* ============================================
+   タイトル画面
+   ============================================ */
+.title-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 40px 24px;
+  text-align: center;
+  background: linear-gradient(180deg, var(--white) 0%, #f0edff 100%);
+}
+
+.title-logo {
+  animation: titleFloat 3s ease-in-out infinite;
+}
+
+.title-sub {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  font-weight: 700;
+  display: block;
+  margin-bottom: 8px;
+  letter-spacing: 3px;
+}
+
+.title-logo h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.4;
+  letter-spacing: 2px;
+}
+
+@keyframes titleFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.title-pokemon-art {
+  margin: 8px 0;
+}
+
+.pixel-pokeball {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(180deg,
+      #ff6b6b 0%, #ff6b6b 44%,
+      #2d3436 44%, #2d3436 56%,
+      #f5f6fa 56%, #f5f6fa 100%);
+  border: 4px solid #2d3436;
+  position: relative;
+  margin: 0 auto;
+  box-shadow: var(--shadow-md);
+  animation: pokeballWiggle 4s ease-in-out infinite;
+}
+
+.pixel-pokeball::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 4px solid #2d3436;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+}
+
+@keyframes pokeballWiggle {
+
+  0%,
+  40%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  10% {
+    transform: rotate(15deg);
+  }
+
+  20% {
+    transform: rotate(-15deg);
+  }
+
+  30% {
+    transform: rotate(8deg);
+  }
+}
+
+.title-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  animation: pulse-text 2s ease-in-out infinite;
+}
+
+@keyframes pulse-text {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ============================================
+   マップ画面
+   ============================================ */
+.map-header {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: var(--white);
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: 0 4px 20px rgba(108, 92, 231, 0.2);
+}
+
+.status-label {
+  font-weight: 700;
+}
+
+.ally-icons {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.ally-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.map-content {
+  flex: 1;
+  padding: 16px 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+}
+
+.map-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.map-board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.map-tile {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border: none;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  gap: 12px;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.map-tile.cleared {
+  background: #f0fff4;
+  border-left: 4px solid var(--success);
+}
+
+.map-tile.current {
+  background: var(--white);
+  border-left: 4px solid var(--primary);
+  box-shadow: var(--shadow-md), 0 0 0 2px rgba(108, 92, 231, 0.15);
+  animation: currentPulse 2s ease-in-out infinite;
+}
+
+@keyframes currentPulse {
+
+  0%,
+  100% {
+    box-shadow: var(--shadow-md), 0 0 0 2px rgba(108, 92, 231, 0.15);
+  }
+
+  50% {
+    box-shadow: var(--shadow-md), 0 0 0 6px rgba(108, 92, 231, 0.08);
+  }
+}
+
+.map-tile.locked {
+  opacity: 0.4;
+  background: var(--bg);
+}
+
+.tile-number {
+  width: 28px;
+  height: 28px;
+  background: var(--primary);
+  color: var(--white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.map-tile.cleared .tile-number {
+  background: var(--success);
+}
+
+.tile-enemy-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+}
+
+.tile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tile-enemy-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tile-detail {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.tile-status {
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.tile-status.done {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.map-footer {
+  padding: 12px 16px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.map-footer .gb-btn {
+  width: 100%;
+  max-width: 320px;
+  font-size: 0.9rem;
+  padding: 16px 24px;
+}
+
+/* ============================================
+   バトル画面
+   ============================================ */
+.battle-screen {
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  overflow: hidden;
+}
+
+.battle-enemy-area {
+  flex: 0 0 auto;
+  padding: 10px 16px 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: linear-gradient(180deg, #fafafa, var(--white));
+}
+
+.enemy-info {
+  flex: 1;
+}
+
+.enemy-name {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.hp-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: #eee;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.hp-bar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.4s ease;
+}
+
+.enemy-bar {
+  background: var(--hp-green);
+}
+
+.player-bar {
+  background: var(--hp-green);
+}
+
+.hp-text {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: block;
+}
+
+/* 敵HPテキストは非表示 */
+.enemy-info .hp-text {
+  display: none;
+}
+
+.enemy-sprite {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: radial-gradient(circle at 50% 80%, rgba(108, 92, 231, 0.06) 0%, transparent 70%);
+  border-radius: var(--radius-lg);
+}
+
+.enemy-sprite img {
+  max-width: 64px;
+  max-height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+  animation: enemyIdle 3s ease-in-out infinite;
+}
+
+@keyframes enemyIdle {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* 敵ダメージアニメ */
+@keyframes enemyHit {
+
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  15% {
+    transform: translateX(-10px);
+    opacity: 0.3;
+  }
+
+  30% {
+    transform: translateX(10px);
+    opacity: 1;
+  }
+
+  45% {
+    transform: translateX(-6px);
+    opacity: 0.3;
+  }
+
+  60% {
+    transform: translateX(6px);
+    opacity: 1;
+  }
+}
+
+.enemy-hit {
+  animation: enemyHit 0.5s ease !important;
+}
+
+/* 敵倒した時 */
+@keyframes enemyDefeat {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+  }
+
+  50% {
+    transform: scale(1.15);
+    opacity: 0.6;
+    filter: drop-shadow(0 0 20px rgba(108, 92, 231, 0.5));
+  }
+
+  100% {
+    transform: scale(0) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+.enemy-defeat {
+  animation: enemyDefeat 0.8s ease forwards !important;
+}
+
+.battle-player-area {
+  flex: 0 0 auto;
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  margin: 0 10px;
+}
+
+.player-info {
+  flex: 1;
+}
+
+.player-name {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text);
+  display: block;
+  margin-bottom: 3px;
+}
+
+.player-allies-display {
+  flex-shrink: 0;
+}
+
+/* プレイヤーダメージ */
+@keyframes playerHit {
+
+  0%,
+  100% {
+    background: var(--bg);
+  }
+
+  25%,
+  75% {
+    background: rgba(225, 112, 85, 0.12);
+  }
+}
+
+.player-hit {
+  animation: playerHit 0.6s ease;
+}
+
+/* --- メッセージ & 問題 --- */
+.battle-msg-area {
+  padding: 6px 16px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.battle-message {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.4;
+  width: 100%;
+}
+
+.question-area {
+  flex: 1;
+  padding: 2px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.question-area.hidden {
+  display: none;
+}
+
+.question-category {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(108, 92, 231, 0.08);
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  align-self: center;
+}
+
+.question-text {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.5;
+  font-weight: 700;
+  text-align: center;
+  padding: 2px 0;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.choice-btn {
+  font-family: var(--font-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 9px 14px;
+  background: var(--white);
+  color: var(--text);
+  border: 2px solid #e9ecef;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.4;
+  transition: all 0.2s ease;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+}
+
+.choice-btn:active {
+  transform: scale(0.97);
+  border-color: var(--primary-light);
+}
+
+.choice-btn.correct {
+  background: var(--success);
+  color: var(--white);
+  border-color: var(--success);
+  animation: correctPop 0.4s ease;
+  box-shadow: 0 4px 16px rgba(0, 184, 148, 0.3);
+}
+
+.choice-btn.wrong {
+  background: var(--danger);
+  color: var(--white);
+  border-color: var(--danger);
+  animation: wrongShake 0.5s ease;
+  box-shadow: 0 4px 16px rgba(225, 112, 85, 0.3);
+}
+
+@keyframes correctPop {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.03);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes wrongShake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-6px);
+  }
+
+  40% {
+    transform: translateX(6px);
+  }
+
+  60% {
+    transform: translateX(-4px);
+  }
+
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* ============================================
+   リザルト画面
+   ============================================ */
+.result-content,
+.clear-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.result-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.result-message {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.result-stats {
+  background: var(--bg);
+  padding: 16px 28px;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  line-height: 2;
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ============================================
+   クリア画面
+   ============================================ */
+.clear-content {
+  background: linear-gradient(180deg, var(--white), #fdf0ff);
+}
+
+.clear-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: titleFloat 2s ease-in-out infinite;
+}
+
+.clear-trophy {
+  font-size: 4rem;
+  animation: trophyBounce 2s ease-in-out infinite;
+}
+
+@keyframes trophyBounce {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15) rotate(5deg);
+  }
+}
+
+.clear-message {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.8;
+  font-weight: 600;
+}
+
+.clear-allies {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.clear-ally-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--white);
+  padding: 8px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.clear-ally-item img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.clear-ally-item span {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+/* ============================================
+   身代わりモーダル
+   ============================================ */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: modalIn 0.3s ease;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+  animation: modalPop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes modalPop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--danger);
+  margin-bottom: 12px;
+}
+
+.modal-message {
+  font-size: 0.8rem;
+  color: var(--text);
+  line-height: 1.8;
+  margin-bottom: 16px;
+  white-space: pre-line;
+}
+
+.sub-sprite {
+  margin: 12px auto;
+}
+
+.sub-sprite img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  animation: subFadeOut 1.5s ease forwards;
+}
+
+@keyframes subFadeOut {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(0) translateY(-30px);
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   モンスターボール捕獲モーダル
+   ============================================ */
+/* ============================================
+   モンスターボール捕獲（スワイプ投げ）
+   ============================================ */
+.capture-fullscreen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 16px 16px;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.capture-title-text {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fdcb6e;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.capture-msg {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 4px;
+}
+
+/* ターゲットエリア */
+.capture-target-area {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.target-ring {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border: 4px solid rgba(0, 184, 148, 0.7);
+  border-radius: 50%;
+  animation: ringPulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes ringPulse {
+  0% {
+    transform: scale(1);
+    border-color: rgba(0, 184, 148, 0.7);
+  }
+
+  50% {
+    transform: scale(0.4);
+    border-color: rgba(253, 203, 110, 0.9);
+  }
+
+  100% {
+    transform: scale(1);
+    border-color: rgba(0, 184, 148, 0.7);
+  }
+}
+
+.capture-enemy-center {
+  position: relative;
+  z-index: 2;
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.capture-enemy-center img {
+  max-width: 80px;
+  max-height: 80px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 16px rgba(255, 255, 255, 0.2));
+  animation: targetFloat 2.5s ease-in-out infinite;
+}
+
+@keyframes targetFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* スワイプエリア */
+.capture-swipe-area {
+  width: 120px;
+  height: 120px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.swipe-ball {
+  position: absolute;
+  touch-action: none;
+  cursor: grab;
+  z-index: 10;
+  transition: none;
+}
+
+.swipe-ball:active {
+  cursor: grabbing;
+}
+
+.pokeball-mini {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(180deg,
+      #ff4444 0%, #ff4444 44%,
+      #333 44%, #333 56%,
+      #f5f5f5 56%, #f5f5f5 100%);
+  border: 3px solid #333;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.pokeball-mini::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #333;
+}
+
+.capture-hint-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  animation: pulse-text 2s ease-in-out infinite;
+  margin: 0;
+}
+
+.capture-btn-skip {
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 16px;
+  transition: color 0.2s;
+}
+
+.capture-btn-skip:active {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.capture-result {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.6;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+}
+
+.capture-result.success {
+  color: #55efc4;
+}
+
+.capture-result.skipped {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ボール揺れ（捕獲チェック中） */
+@keyframes ballWiggle {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(25deg);
+  }
+
+  75% {
+    transform: rotate(-25deg);
+  }
+}
+
+.ball-wiggling .pokeball-mini {
+  animation: ballWiggle 0.4s ease 3 !important;
+}
+
+/* 捕獲成功フラッシュ */
+@keyframes captureFlash {
+  0% {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 0 60px rgba(255, 215, 0, 0.4);
+  }
+
+  100% {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+  }
+}
+
+.ball-captured .pokeball-mini {
+  animation: captureFlash 0.8s ease forwards !important;
+}
+
+/* 敵が吸い込まれる */
+@keyframes enemySuckedIn {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(0.3);
+    opacity: 0.5;
+    filter: brightness(3);
+  }
+
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.enemy-sucked-in {
+  animation: enemySuckedIn 0.5s ease forwards !important;
+}
+
+/* ボール失敗（戻る） */
+@keyframes ballReturn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+
+/* ============================================
+   レスポンシブ
+   ============================================ */
+@media (min-width: 431px) {
+  .screen {
+    height: 96dvh;
+    top: 2dvh;
+  }
+
+  .gb-frame {
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+}
+
+/* ============================================
+   ユーティリティ
+   ============================================ */
+.hidden {
+  display: none !important;
+}
+
+.text-center {
+  text-align: center;
+}
