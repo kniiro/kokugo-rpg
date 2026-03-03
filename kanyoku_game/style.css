@@ -252,6 +252,16 @@ body {
   animation: pokeballWiggle 4s ease-in-out infinite;
 }
 
+.app-version {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  font-size: 0.65rem;
+  font-family: var(--font-main);
+  color: var(--text-light);
+  opacity: 0.6;
+}
+
 .pixel-pokeball::after {
   content: '';
   position: absolute;
@@ -1126,7 +1136,7 @@ body {
   touch-action: none;
   cursor: grab;
   z-index: 10;
-  transition: none;
+  /* JSの制御中はtransitionを無効化する */
 }
 
 .swipe-ball:active {
@@ -1144,6 +1154,8 @@ body {
   border: 3px solid #333;
   position: relative;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  /* JSで回転させるため、中心を原点に */
+  transform-origin: center center;
 }
 
 .pokeball-mini::after {
@@ -1267,21 +1279,10 @@ body {
   animation: enemySuckedIn 0.5s ease forwards !important;
 }
 
-/* ボール失敗（戻る） */
-@keyframes ballReturn {
-  0% {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* JSの戻りアニメーション用 */
+.ball-returning {
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-
-
-
 
 /* ============================================
    レスポンシブ

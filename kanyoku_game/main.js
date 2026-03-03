@@ -515,10 +515,27 @@ function onEnemyDefeated() {
   }, 1500);
 }
 
-// ─── モンスターボール捕獲（スワイプ） ───
-let swipeStartY = 0;
-let swipeStartTime = 0;
-let isSwiping = false;
+// ─── モンスターボール捕獲（3D物理シミュレーション） ───
+let captureState = {
+  isSwiping: false,
+  isThrown: false,
+  startX: 0,
+  startY: 0,
+  currentX: 0,
+  currentY: 0,
+  startTime: 0,
+  lastTime: 0,
+  velocities: [], // 直近の速度履歴を保持して精緻化
+  ballX: 0,
+  ballY: 0,
+  ballZ: 1, // スケール（奥行き）
+  velocityX: 0,
+  velocityY: 0,
+  velocityZ: 0,
+  gravity: 1.2, // 重力
+  rotation: 0,
+  animationFrame: null,
+};
 
 function showCaptureModal(enemy) {
   const modal = document.getElementById('modal-capture');
@@ -527,10 +544,24 @@ function showCaptureModal(enemy) {
     `<img src="images/${enemy.img}" alt="${enemy.name}"
           onerror="this.textContent='❓'; this.style.fontSize='48px';">`;
 
-  // リセット状態
+  // 物理状態リセット
+  captureState = {
+    ...captureState,
+    isSwiping: false,
+    isThrown: false,
+    ballX: 0,
+    ballY: 0,
+    ballZ: 1,
+    rotation: 0,
+    velocities: []
+  };
+
+  // ボールの表示リセット
   const ball = document.getElementById('capture-ball');
   ball.className = 'swipe-ball';
   ball.innerHTML = '<div class="pokeball-mini"></div>';
+  ball.style.transform = `translate3d(0px, 0px, 0) scale(1) rotate(0deg)`;
+  ball.classList.remove('ball-returning');
 
   const result = document.getElementById('capture-result');
   result.className = 'capture-result hidden';
@@ -543,16 +574,26 @@ function showCaptureModal(enemy) {
 
   modal.classList.remove('hidden');
 
-  // スワイプイベント登録
+  // イベント登録
   ball.addEventListener('touchstart', handleSwipeStart, { passive: false });
   ball.addEventListener('mousedown', handleSwipeStart);
 }
 
 function handleSwipeStart(e) {
+  if (captureState.isThrown) return;
   e.preventDefault();
-  isSwiping = true;
-  swipeStartY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-  swipeStartTime = Date.now();
+
+  const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+  const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+  captureState.isSwiping = true;
+  captureState.startX = clientX;
+  captureState.startY = clientY;
+  captureState.currentX = clientX;
+  captureState.currentY = clientY;
+  captureState.startTime = Date.now();
+  captureState.lastTime = Date.now();
+  captureState.velocities = [];
 
   const ball = document.getElementById('capture-ball');
   ball.classList.remove('ball-returning');
@@ -564,62 +605,157 @@ function handleSwipeStart(e) {
 }
 
 function handleSwipeMove(e) {
-  if (!isSwiping) return;
-  e.preventDefault(); // スクロール防止
+  if (!captureState.isSwiping || captureState.isThrown) return;
+  e.preventDefault();
+
+  const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+  const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+  const now = Date.now();
+  const dt = Math.max(1, now - captureState.lastTime);
+
+  // 速度の記録（px/ms）
+  const vx = (clientX - captureState.currentX) / dt;
+  const vy = (clientY - captureState.currentY) / dt;
+
+  captureState.velocities.push({ vx, vy, time: now });
+  // 古い履歴を削除（直近100msのみ保持）
+  captureState.velocities = captureState.velocities.filter(v => now - v.time < 100);
+
+  // 位置の更新
+  captureState.ballX += window.innerWidth < 400 ? (clientX - captureState.currentX) * 1.5 : (clientX - captureState.currentX); // 画面幅に合わせた感度
+  captureState.ballY += window.innerHeight < 700 ? (clientY - captureState.currentY) * 1.5 : (clientY - captureState.currentY);
+
+  captureState.currentX = clientX;
+  captureState.currentY = clientY;
+  captureState.lastTime = now;
+
+  // ボールのDOMを更新（指に追従）
+  renderBall();
 }
 
 function handleSwipeEnd(e) {
-  if (!isSwiping) return;
-  isSwiping = false;
+  if (!captureState.isSwiping || captureState.isThrown) return;
+  captureState.isSwiping = false;
 
   document.removeEventListener('touchmove', handleSwipeMove);
   document.removeEventListener('touchend', handleSwipeEnd);
   document.removeEventListener('mousemove', handleSwipeMove);
   document.removeEventListener('mouseup', handleSwipeEnd);
 
-  const endY = e.type.includes('touch') ? e.changedTouches[0].clientY : e.clientY;
-  const timeDiff = Date.now() - swipeStartTime;
-  const distanceY = swipeStartY - endY; // 上方向が正
+  // 直近の速度の平均を計算して初速とする
+  let avgVy = 0;
+  let avgVx = 0;
+  if (captureState.velocities.length > 0) {
+    avgVy = captureState.velocities.reduce((sum, v) => sum + v.vy, 0) / captureState.velocities.length;
+    avgVx = captureState.velocities.reduce((sum, v) => sum + v.vx, 0) / captureState.velocities.length;
+  }
 
-  // スワイプ速度判定（px/ms）
-  const velocity = distanceY / timeDiff;
+  // Y軸上方向（マイナス）への速度が一定以上なら「投げた」と判定
+  if (avgVy < -0.5) {
+    // 投擲開始
+    captureState.isThrown = true;
+    captureState.velocityX = avgVx * 20; // x軸の初速
+    captureState.velocityY = avgVy * 30; // y軸（上方向）の初速
+    captureState.velocityZ = -0.015; // 奥への縮小速度（スケール）
+    captureState.gravity = 1.0; // 重力
 
-  // 上方向に一定以上の速度・距離でスワイプされたか
-  if (distanceY > 50 && velocity > 0.3) {
-    throwBall(); // 投げ成功
+    // 物理シミュレーションループ開始
+    if (captureState.animationFrame) cancelAnimationFrame(captureState.animationFrame);
+    captureState.animationFrame = requestAnimationFrame(updatePhysics);
+
+    document.getElementById('capture-hint').classList.add('hidden');
+
   } else {
-    // 投げ失敗（ボールが戻る）
-    const ball = document.getElementById('capture-ball');
-    ball.classList.add('ball-returning');
+    // 投げ失敗：元の位置に戻る
+    returnBallToStart();
   }
 }
 
-function throwBall() {
-  const ball = document.getElementById('capture-ball');
-  // イベント削除
-  ball.removeEventListener('touchstart', handleSwipeStart);
-  ball.removeEventListener('mousedown', handleSwipeStart);
+// 物理演算ループ
+function updatePhysics() {
+  if (!captureState.isThrown) return;
 
+  // 速度と位置の更新
+  captureState.velocityY += captureState.gravity; // 重力を適用
+  captureState.ballX += captureState.velocityX;
+  captureState.ballY += captureState.velocityY;
+  captureState.ballZ += captureState.velocityZ; // スケール縮小（奥へ飛ぶ）
+  captureState.rotation += captureState.velocityX * 2; // X軸移動に応じて回転
+
+  renderBall();
+
+  // ボールが奥に行きすぎた または 下に落ちすぎた場合は終了判定
+  if (captureState.ballZ <= 0.3 || captureState.ballY > 300) {
+    cancelAnimationFrame(captureState.animationFrame);
+    checkHit();
+    return;
+  }
+
+  captureState.animationFrame = requestAnimationFrame(updatePhysics);
+}
+
+function renderBall() {
+  const ball = document.getElementById('capture-ball');
+  const scale = Math.max(0, captureState.ballZ);
+  ball.style.transform = `translate3d(${captureState.ballX}px, ${captureState.ballY}px, 0) scale(${scale}) rotate(${captureState.rotation}deg)`;
+}
+
+// ボールを元の位置に戻す（失敗・やり直し）
+function returnBallToStart() {
+  captureState.isThrown = false;
+  captureState.isSwiping = false;
+
+  const ball = document.getElementById('capture-ball');
+  ball.classList.add('ball-returning'); // CSS transition
+  captureState.ballX = 0;
+  captureState.ballY = 0;
+  captureState.ballZ = 1;
+  captureState.rotation = 0;
+  ball.style.transform = `translate3d(0px, 0px, 0) scale(1) rotate(0deg)`;
+
+  setTimeout(() => {
+    ball.classList.remove('ball-returning');
+  }, 400);
+}
+
+// 当たり判定チェック
+function checkHit() {
+  // 敵の想定位置（X: -40px 〜 40px, 高さ: 画面上部）
+  // 簡易的に Z（スケール）が 0.3〜0.5に到達し、かつ Xのズレが少なければヒットとする
+  const isHit = captureState.ballY < -100 && Math.abs(captureState.ballX) < 120;
+
+  if (isHit) {
+    // 捕獲成功プロセスの開始
+    const ball = document.getElementById('capture-ball');
+    ball.removeEventListener('touchstart', handleSwipeStart);
+    ball.removeEventListener('mousedown', handleSwipeStart);
+    processCaptureSuccess();
+  } else {
+    // 外れた：やり直し
+    returnBallToStart();
+  }
+}
+
+// 捕獲成功アニメーションとロジック
+function processCaptureSuccess() {
   document.getElementById('btn-skip-capture').classList.add('hidden');
-  document.getElementById('capture-hint').classList.add('hidden');
   document.getElementById('capture-target-ring').style.display = 'none';
 
-  // 敵が吸い込まれるアニメーション
-  const enemySprite = document.getElementById('capture-enemy-sprite');
-  const enemyImg = enemySprite.querySelector('img, span');
+  const ball = document.getElementById('capture-ball');
+  // 一旦固定（敵の位置付近へ）
+  ball.style.transform = `translate3d(0px, -180px, 0) scale(0.6) rotate(0deg)`;
+
+  // 敵が吸い込まれる
+  const enemyImg = document.querySelector('#capture-enemy-sprite img');
   if (enemyImg) enemyImg.classList.add('enemy-sucked-in');
 
-  // ボール投げアニメーション
-  ball.classList.add('ball-throwing');
-
-  // 投げた後に揺れ
+  // 吸い込み後、ボール揺れへ
   setTimeout(() => {
     document.getElementById('capture-enemy-sprite').classList.add('hidden');
-    ball.classList.remove('ball-throwing');
     ball.classList.add('ball-wiggling');
-  }, 700);
+  }, 500);
 
-  // 揺れ3回の後、捕獲成功
+  // 揺れ完了後、捕獲成功
   setTimeout(() => {
     ball.classList.remove('ball-wiggling');
     ball.classList.add('ball-captured');
@@ -630,13 +766,12 @@ function throwBall() {
     result.className = 'capture-result success';
     result.textContent = `✨ やった！ ${enemy.name} を捕まえた！`;
 
-    // 仲間に追加
     gameState.allies.push({ name: enemy.name, img: enemy.img });
     gameState.currentStage++;
     saveProgress();
 
     setTimeout(() => proceedAfterCapture(), 2000);
-  }, 2300);
+  }, 2200); // 吸い込み500 + 揺れ1200 + α
 }
 
 function skipCapture() {
