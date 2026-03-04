@@ -34,7 +34,15 @@ let gameState = {
   usedQuestionIds: new Set(),
   currentQuestion: null,
   battleActive: false,
+
+  // 再プレイ（クリア済みステージの再挑戦）
+  replayStage: null,  // null=通常進行, number=再プレイ中のステージindex
 };
+
+// ─── 再プレイ対応ヘルパー ───
+function getBattleStage() {
+  return gameState.replayStage !== null ? gameState.replayStage : gameState.currentStage;
+}
 
 // ─── 進捗保存/復元 (localStorage) ───
 function saveProgress() {
@@ -275,7 +283,18 @@ function renderMap() {
       <div class="tile-status ${i < gameState.currentStage ? 'done' : ''}">
         ${i < gameState.currentStage ? '✔' : i === gameState.currentStage ? '▶' : '🔒'}
       </div>
+      ${i < gameState.currentStage ? '<div class="tile-replay-badge">🔄再プレイ</div>' : ''}
     `;
+
+    // クリア済みタイルをタップで再プレイ
+    if (i < gameState.currentStage) {
+      tile.classList.add('replayable');
+      tile.addEventListener('click', () => {
+        soundManager.playClick();
+        startReplay(i);
+      });
+    }
+
     board.appendChild(tile);
   });
 
@@ -293,6 +312,12 @@ function renderMap() {
   }
 }
 
+// ─── 再プレイ開始 ───
+function startReplay(stageIndex) {
+  gameState.replayStage = stageIndex;
+  startBattle();
+}
+
 function renderAllyIcons(elementId) {
   const container = document.getElementById(elementId);
   if (!container) return;
@@ -306,7 +331,7 @@ function renderAllyIcons(elementId) {
 
 // ─── バトル開始 ───
 function startBattle() {
-  const stage = gameState.currentStage;
+  const stage = getBattleStage();
   if (stage >= ENEMIES.length) return;
 
   const enemy = ENEMIES[stage];
@@ -335,7 +360,8 @@ function startBattle() {
 
   // バトル開始メッセージ
   const msg = document.getElementById('battle-message');
-  msg.textContent = `野生の ${enemy.name} が現れた！`;
+  const replayLabel = gameState.replayStage !== null ? '【再プレイ】 ' : '';
+  msg.textContent = `${replayLabel}野生の ${enemy.name} が現れた！`;
 
   // バトルBGM（ステージに応じて切替）& 開始SE
   if (stage >= 9) {
@@ -382,7 +408,7 @@ function updateHpBars() {
 function showNextQuestion() {
   if (!gameState.battleActive) return;
 
-  const enemy = ENEMIES[gameState.currentStage];
+  const enemy = ENEMIES[getBattleStage()];
   const availableLevels = enemy.levels;
 
   // 該当レベル & 未出題のものをフィルタ
@@ -509,7 +535,7 @@ function onEnemyDefeated() {
   const el = sprite.querySelector('img, span');
   if (el) el.classList.add('enemy-defeat');
 
-  const enemy = ENEMIES[gameState.currentStage];
+  const enemy = ENEMIES[getBattleStage()];
   const msg = document.getElementById('battle-message');
   msg.textContent = `🎉 ${enemy.name} を倒した！`;
   soundManager.playDefeat();
@@ -771,13 +797,19 @@ function processCaptureSuccess() {
     ball.classList.add('ball-captured');
     soundManager.playCorrect();
 
-    const enemy = ENEMIES[gameState.currentStage];
+    const stage = getBattleStage();
+    const enemy = ENEMIES[stage];
     const result = document.getElementById('capture-result');
     result.className = 'capture-result success';
     result.textContent = `✨ やった！ ${enemy.name} を捕まえた！`;
 
     gameState.allies.push({ name: enemy.name, img: enemy.img });
-    gameState.currentStage++;
+
+    // 再プレイ中はステージを進めない
+    if (gameState.replayStage === null) {
+      gameState.currentStage++;
+    }
+    gameState.replayStage = null;
     saveProgress();
 
     setTimeout(() => proceedAfterCapture(), 2000);
@@ -793,13 +825,17 @@ function skipCapture() {
   ball.removeEventListener('touchstart', handleSwipeStart);
   ball.removeEventListener('mousedown', handleSwipeStart);
 
-  const enemy = ENEMIES[gameState.currentStage];
+  const stage = getBattleStage();
+  const enemy = ENEMIES[stage];
   const result = document.getElementById('capture-result');
   result.className = 'capture-result skipped';
   result.textContent = `${enemy.name} は逃げていった…`;
 
-  // 仲間に追加しないでステージを進める
-  gameState.currentStage++;
+  // 再プレイ中はステージを進めない
+  if (gameState.replayStage === null) {
+    gameState.currentStage++;
+  }
+  gameState.replayStage = null;
   saveProgress();
 
   setTimeout(() => proceedAfterCapture(), 1500);
@@ -844,10 +880,14 @@ function onGameOver() {
   soundManager.stopBGM();
   soundManager.playGameOver();
 
-  const enemy = ENEMIES[gameState.currentStage];
+  const stage = getBattleStage();
+  const enemy = ENEMIES[stage];
   const msg = document.getElementById('battle-message');
   msg.textContent = `😢 ${enemy.name} に負けてしまった… もう一度挑戦！`;
   document.getElementById('question-area').classList.add('hidden');
+
+  // 再プレイ状態をリセット
+  gameState.replayStage = null;
 
   // 少し待ってからマップ画面に戻る（同じステージから再挑戦）
   setTimeout(() => {
