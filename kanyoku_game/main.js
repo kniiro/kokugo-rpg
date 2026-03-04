@@ -274,7 +274,7 @@ function renderMap() {
 
     tile.innerHTML = `
       <div class="tile-number">${i + 1}</div>
-      <img class="tile-enemy-icon" src="images/${enemy.img}" alt="${enemy.name}"
+      <img class="tile-enemy-icon" src="images/${enemy.img}?v=${Date.now()}" alt="${enemy.name}"
            onerror="this.style.display='none'">
       <div class="tile-info">
         <div class="tile-enemy-name">${enemy.name}${enemy.boss ? ' ★' : ''}</div>
@@ -324,7 +324,7 @@ function renderAllyIcons(elementId) {
   container.innerHTML = gameState.allies.length === 0
     ? '<span style="font-size:0.6rem;">なし</span>'
     : gameState.allies.map(a =>
-      `<img class="ally-icon" src="images/${a.img}" alt="${a.name}" title="${a.name}"
+      `<img class="ally-icon" src="images/${a.img}?v=${Date.now()}" alt="${a.name}" title="${a.name}"
               onerror="this.textContent='🔵'; this.style.fontSize='14px';">`
     ).join('');
 }
@@ -348,7 +348,7 @@ function startBattle() {
 
   // スプライトを完全リセット（前回のdefeatアニメやフォールバックをクリア）
   const spriteContainer = document.getElementById('enemy-sprite');
-  spriteContainer.innerHTML = `<img id="enemy-img" src="images/${enemy.img}" alt="${enemy.name}">`;
+  spriteContainer.innerHTML = `<img id="enemy-img" src="images/${enemy.img}?v=${Date.now()}" alt="${enemy.name}">`;
   const enemyImg = document.getElementById('enemy-img');
   enemyImg.onerror = () => {
     const fallbacks = ['🐭', '🦇', '💪', '👻', '😴', '🦗', '🐉', '🦕', '🐲', '👾'];
