@@ -572,47 +572,74 @@ let captureState = {
 
 function showCaptureModal(enemy) {
   const modal = document.getElementById('modal-capture');
-  document.getElementById('capture-message').textContent = `${enemy.name} をゲットしよう！`;
+  const ball = document.getElementById('capture-ball');
+  const btnSkip = document.getElementById('btn-skip-capture');
+  const hint = document.getElementById('capture-hint');
+  const targetRing = document.getElementById('capture-target-ring');
+
+  // 同一ポケモンの所持数をカウント
+  const currentCount = gameState.allies.filter(a => a.name === enemy.name).length;
+
+  if (currentCount >= 2) {
+    // 捕獲上限到達
+    document.getElementById('capture-message').textContent = `これ以上 ${enemy.name} は捕まえられない！！`;
+    ball.style.display = 'none';
+    hint.classList.add('hidden');
+    targetRing.style.display = 'none';
+
+    // スキップボタンを「すすむ」に変更
+    btnSkip.textContent = 'すすむ ▶';
+    btnSkip.classList.remove('hidden');
+    btnSkip.dataset.reason = 'limit'; // スキップ理由を記録
+
+  } else {
+    // 通常の捕獲フロー
+    document.getElementById('capture-message').textContent = `${enemy.name} をゲットしよう！`;
+    ball.style.display = 'flex'; // または元のdisplay値 ('block'など、CSSに合わせてflexと想定)
+    hint.classList.remove('hidden');
+    targetRing.style.display = 'block';
+
+    // スキップボタンを「にがす」に戻す
+    btnSkip.textContent = 'にがす ▶';
+    btnSkip.classList.remove('hidden');
+    btnSkip.dataset.reason = 'skip';
+
+    // 物理状態リセット
+    captureState = {
+      ...captureState,
+      isSwiping: false,
+      isThrown: false,
+      ballX: 0,
+      ballY: 0,
+      ballZ: 1,
+      rotation: 0,
+      velocities: []
+    };
+
+    // ボールの表示リセット
+    ball.className = 'swipe-ball';
+    ball.innerHTML = '<div class="pokeball-mini"></div>';
+    ball.style.transform = `translate3d(0px, 0px, 0) scale(1) rotate(0deg)`;
+    ball.classList.remove('ball-returning');
+
+    // イベント登録
+    ball.addEventListener('touchstart', handleSwipeStart, { passive: false });
+    ball.addEventListener('mousedown', handleSwipeStart);
+  }
+
   document.getElementById('capture-enemy-sprite').innerHTML =
     `<img src="images/${enemy.img}" alt="${enemy.name}"
           onerror="this.textContent='❓'; this.style.fontSize='48px';">`;
-
-  // 物理状態リセット
-  captureState = {
-    ...captureState,
-    isSwiping: false,
-    isThrown: false,
-    ballX: 0,
-    ballY: 0,
-    ballZ: 1,
-    rotation: 0,
-    velocities: []
-  };
-
-  // ボールの表示リセット
-  const ball = document.getElementById('capture-ball');
-  ball.className = 'swipe-ball';
-  ball.innerHTML = '<div class="pokeball-mini"></div>';
-  ball.style.transform = `translate3d(0px, 0px, 0) scale(1) rotate(0deg)`;
-  ball.classList.remove('ball-returning');
 
   const result = document.getElementById('capture-result');
   result.className = 'capture-result hidden';
   result.textContent = '';
 
-  document.getElementById('btn-skip-capture').classList.remove('hidden');
-  document.getElementById('capture-hint').classList.remove('hidden');
-  document.getElementById('capture-target-ring').style.display = 'block';
   document.getElementById('capture-enemy-sprite').classList.remove('hidden');
-
   modal.classList.remove('hidden');
 
   // BGMを捕獲用 (victory.mp3) に切り替え
   soundManager.playCaptureBGM();
-
-  // イベント登録
-  ball.addEventListener('touchstart', handleSwipeStart, { passive: false });
-  ball.addEventListener('mousedown', handleSwipeStart);
 }
 
 function handleSwipeStart(e) {
@@ -817,7 +844,10 @@ function processCaptureSuccess() {
 }
 
 function skipCapture() {
-  document.getElementById('btn-skip-capture').classList.add('hidden');
+  const btnSkip = document.getElementById('btn-skip-capture');
+  const reason = btnSkip.dataset.reason;
+
+  btnSkip.classList.add('hidden');
   document.getElementById('capture-hint').classList.add('hidden');
   document.getElementById('capture-target-ring').style.display = 'none';
 
@@ -828,8 +858,14 @@ function skipCapture() {
   const stage = getBattleStage();
   const enemy = ENEMIES[stage];
   const result = document.getElementById('capture-result');
-  result.className = 'capture-result skipped';
-  result.textContent = `${enemy.name} は逃げていった…`;
+
+  if (reason === 'limit') {
+    result.className = 'capture-result skipped'; // 逃がした時と同じスタイル
+    result.textContent = `ストックがいっぱいだ！ 次のマスへ進もう！`;
+  } else {
+    result.className = 'capture-result skipped';
+    result.textContent = `${enemy.name} は逃げていった…`;
+  }
 
   // 再プレイ中はステージを進めない
   if (gameState.replayStage === null) {
