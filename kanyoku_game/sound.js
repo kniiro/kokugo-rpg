@@ -122,41 +122,70 @@ class SoundManager {
         this.playTone(233.08, 0.3, 'square', this.sfxGain, t + 0.15); // A#3
     }
 
-    // ─── 効果音: 敵にダメージ ───
-    playHit() {
+    // ─── 効果音: 敵にダメージ（ホワイトノイズでの打撃音） ───
+    playHit(delay = 0) {
         if (!this.ctx) return;
         this.init();
-        const t = this.ctx.currentTime;
-        // ノイズ的な打撃音
-        const osc = this.ctx.createOscillator();
+        const t = this.ctx.currentTime + delay;
+
+        const bufferSize = this.ctx.sampleRate * 0.15; // 0.15秒
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1; // ホワイトノイズ
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        // ノイズにフィルターをかけて「バシッ」という音にする
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(3000, t);
+        filter.frequency.exponentialRampToValueAtTime(500, t + 0.1);
+
         const env = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(800, t);
-        osc.frequency.exponentialRampToValueAtTime(200, t + 0.1);
-        env.gain.setValueAtTime(0.4, t);
-        env.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
-        osc.connect(env);
+        env.gain.setValueAtTime(0.8, t);
+        env.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+
+        noise.connect(filter);
+        filter.connect(env);
         env.connect(this.sfxGain);
-        osc.start(t);
-        osc.stop(t + 0.15);
+
+        noise.start(t);
     }
 
-    // ─── 効果音: プレイヤーダメージ ───
-    playPlayerHit() {
+    // ─── 効果音: プレイヤーダメージ（重めの打撃音） ───
+    playPlayerHit(delay = 0) {
         if (!this.ctx) return;
         this.init();
-        const t = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
+        const t = this.ctx.currentTime + delay;
+
+        const bufferSize = this.ctx.sampleRate * 0.25; // 0.25秒
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        // プレイヤー被弾は少しこもった重い音に
+        filter.frequency.setValueAtTime(1500, t);
+        filter.frequency.exponentialRampToValueAtTime(100, t + 0.2);
+
         const env = this.ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(400, t);
-        osc.frequency.exponentialRampToValueAtTime(100, t + 0.2);
-        env.gain.setValueAtTime(0.35, t);
+        env.gain.setValueAtTime(1.0, t);
         env.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
-        osc.connect(env);
+
+        noise.connect(filter);
+        filter.connect(env);
         env.connect(this.sfxGain);
-        osc.start(t);
-        osc.stop(t + 0.3);
+
+        noise.start(t);
     }
 
     // ─── 効果音: 敵撃破 ───
