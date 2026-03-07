@@ -1203,6 +1203,32 @@ body {
   transform-origin: center center;
 }
 
+/* スーパーボール (青色) */
+.pokeball-mini.ball-super {
+  background: linear-gradient(180deg,
+      #3498db 0%, #3498db 44%,
+      #333 44%, #333 56%,
+      #f5f5f5 56%, #f5f5f5 100%);
+}
+
+/* ハイパーボール (黄色) */
+.pokeball-mini.ball-hyper {
+  background: linear-gradient(180deg,
+      #f1c40f 0%, #f1c40f 44%,
+      #333 44%, #333 56%,
+      #f5f5f5 56%, #f5f5f5 100%);
+}
+
+/* マスターボール (紫色) */
+.pokeball-mini.ball-master {
+  background: linear-gradient(180deg,
+      #9b59b6 0%, #9b59b6 44%,
+      #333 44%, #333 56%,
+      #f5f5f5 56%, #f5f5f5 100%);
+}
+
+
+
 .pokeball-mini::after {
   content: '';
   position: absolute;
@@ -1299,6 +1325,23 @@ body {
 
 .ball-captured .pokeball-mini {
   animation: captureFlash 0.8s ease forwards !important;
+}
+
+/* --- スピンチャージ中（カーブボール） --- */
+@keyframes spinCharge {
+  0% {
+    transform: rotate(0deg) scale(1.05);
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+  }
+
+  100% {
+    transform: rotate(360deg) scale(1.05);
+    filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 30px rgba(255, 215, 0, 0.6));
+  }
+}
+
+.swipe-ball.ball-spinning .pokeball-mini {
+  animation: spinCharge 0.5s linear infinite !important;
 }
 
 /* 敵が吸い込まれる */
