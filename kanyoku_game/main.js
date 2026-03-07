@@ -568,6 +568,9 @@ let captureState = {
   gravity: 1.2, // 重力
   rotation: 0,
   animationFrame: null,
+  spin: 0,           // 蓄積されたスピン量
+  isSpinning: false, // スピンチャージ中フラグ
+  lastAngle: 0,      // スピン計算用の直前の角度
 };
 
 function showCaptureModal(enemy) {
@@ -613,12 +616,26 @@ function showCaptureModal(enemy) {
       ballY: 0,
       ballZ: 1,
       rotation: 0,
-      velocities: []
+      velocities: [],
+      spin: 0,
+      isSpinning: false,
+      lastAngle: 0
     };
+
+    // ステージ（敵のインデックス）からボールの種類を決定
+    const stage = getBattleStage();
+    let ballClass = '';
+    if (stage >= 4 && stage <= 6) {       // enemy5-7
+      ballClass = 'ball-super';
+    } else if (stage >= 7 && stage <= 8) { // enemy8-9
+      ballClass = 'ball-hyper';
+    } else if (stage === 9) {             // enemy10
+      ballClass = 'ball-master';
+    }
 
     // ボールの表示リセット
     ball.className = 'swipe-ball';
-    ball.innerHTML = '<div class="pokeball-mini"></div>';
+    ball.innerHTML = `<div class="pokeball-mini ${ballClass}"></div>`;
     ball.style.transform = `translate3d(0px, 0px, 0) scale(1) rotate(0deg)`;
     ball.classList.remove('ball-returning');
 
@@ -657,9 +674,18 @@ function handleSwipeStart(e) {
   captureState.startTime = Date.now();
   captureState.lastTime = Date.now();
   captureState.velocities = [];
+  captureState.spin = 0;
+  captureState.isSpinning = false;
 
   const ball = document.getElementById('capture-ball');
   ball.classList.remove('ball-returning');
+  ball.classList.remove('ball-spinning'); // スピンアニメーションリセット
+
+  // 初期角度の計算（ボール中心を原点とした角度）
+  const rect = ball.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  captureState.lastAngle = Math.atan2(clientY - centerY, clientX - centerX);
 
   document.addEventListener('touchmove', handleSwipeMove, { passive: false });
   document.addEventListener('touchend', handleSwipeEnd);
@@ -683,6 +709,44 @@ function handleSwipeMove(e) {
   captureState.velocities.push({ vx, vy, time: now });
   // 古い履歴を削除（直近100msのみ保持）
   captureState.velocities = captureState.velocities.filter(v => now - v.time < 100);
+
+  // --- スピンの計算 ---
+  const ball = document.getElementById('capture-ball');
+  const rect = ball.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+
+  // 現在の指の角度
+  const currentAngle = Math.atan2(clientY - centerY, clientX - centerX);
+
+  // 角度の差分を求める（-π 〜 π に補正）
+  let angleDiff = currentAngle - captureState.lastAngle;
+  while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+  while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+  // スピン量に加算（ドラッグ中は減衰させつつ蓄積）
+  // 遠くを回した方がスピンがかかりやすいよう距離を考慮
+  const dist = Math.hypot(clientX - centerX, clientY - centerY);
+  if (dist > 10) {
+    captureState.spin += angleDiff * 0.5;
+  }
+  captureState.spin *= 0.98; // 少しずつ自然減衰
+  captureState.lastAngle = currentAngle;
+
+  const SPIN_THRESHOLD = 3.0; // スピンエフェクトが発動する閾値
+  if (Math.abs(captureState.spin) > SPIN_THRESHOLD) {
+    if (!captureState.isSpinning) {
+      captureState.isSpinning = true;
+      ball.classList.add('ball-spinning');
+    }
+  } else {
+    // スピンが弱まったらエフェクト解除
+    if (captureState.isSpinning && Math.abs(captureState.spin) < SPIN_THRESHOLD * 0.5) {
+      captureState.isSpinning = false;
+      ball.classList.remove('ball-spinning');
+    }
+  }
+  // --------------------
 
   // 位置の更新
   captureState.ballX += window.innerWidth < 400 ? (clientX - captureState.currentX) * 1.5 : (clientX - captureState.currentX); // 画面幅に合わせた感度
@@ -722,6 +786,19 @@ function handleSwipeEnd(e) {
     captureState.velocityZ = -0.015; // 奥への縮小速度（スケール）
     captureState.gravity = 1.0; // 重力
 
+    // スピン投擲の判定
+    const ball = document.getElementById('capture-ball');
+    if (captureState.isSpinning) {
+      // スピンが乗った状態（カーブボール）強めのカーブを適用
+      // captureState.spinの符号が回転方向
+      const spinPower = Math.min(Math.max(captureState.spin, -8), 8); // スピン量に制限
+      captureState.spin = spinPower;
+    } else {
+      // 弱いスピンの場合はリセット
+      captureState.spin = 0;
+      ball.classList.remove('ball-spinning');
+    }
+
     // 物理シミュレーションループ開始
     if (captureState.animationFrame) cancelAnimationFrame(captureState.animationFrame);
     captureState.animationFrame = requestAnimationFrame(updatePhysics);
@@ -740,10 +817,21 @@ function updatePhysics() {
 
   // 速度と位置の更新
   captureState.velocityY += captureState.gravity; // 重力を適用
+
+  // マグヌス効果（スピンによるカーブ）
+  if (captureState.isSpinning) {
+    // スピン量に応じて横方向の加速度を加える
+    // spin > 0 なら右へ曲がる, spin < 0 なら左へ曲がる
+    captureState.velocityX += captureState.spin * 0.15;
+  }
+
   captureState.ballX += captureState.velocityX;
   captureState.ballY += captureState.velocityY;
   captureState.ballZ += captureState.velocityZ; // スケール縮小（奥へ飛ぶ）
-  captureState.rotation += captureState.velocityX * 2; // X軸移動に応じて回転
+
+  // Zスケールに応じて回転速度を変える（奥に行くほど回転が遅く見える）
+  const rotSpeed = captureState.velocityX * 2 + (captureState.isSpinning ? captureState.spin * 5 : 0);
+  captureState.rotation += rotSpeed;
 
   renderBall();
 
@@ -767,8 +855,11 @@ function renderBall() {
 function returnBallToStart() {
   captureState.isThrown = false;
   captureState.isSwiping = false;
+  captureState.isSpinning = false;
+  captureState.spin = 0;
 
   const ball = document.getElementById('capture-ball');
+  ball.classList.remove('ball-spinning'); // スピン解除
   ball.classList.add('ball-returning'); // CSS transition
   captureState.ballX = 0;
   captureState.ballY = 0;
